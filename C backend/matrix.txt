@@ -209,12 +209,7 @@ void reshape(Matrix * M , int rows , int cols){
          M->cols = cols;
     }else if(size < new_size){
      // we need to perform realloc here to increase the size
-        double * temp = realloc(M->arr , new_size * sizeof(double));
-        if(!temp){
-            perror("realloc failed");
-            exit(1);
-        }
-        M->arr = temp;
+        M->arr = realloc(M->arr , new_size * sizeof(double));
         for(int i = size; i < new_size; i++)
               M->arr[i]=0; // Zero initialize all the newly created memeory
         M->rows = rows;
@@ -235,7 +230,7 @@ Matrix * matMul(Matrix * A , Matrix * B){
       int Row_A = A->rows;
       int Col_B = B->cols;
       int Inner = A->cols; // or B->rows;
-      double C = 0;
+      int C = 0;
       Matrix * res = newEmptyMatrix(Row_A , Col_B); 
 
       for(int r=0; r<Row_A; r++){
