@@ -243,14 +243,102 @@ void printTensor(Tensor *T) {
     fflush(stdout);
 }
 
+size_t getOffset(size_t * strides , size_t * indices , int ndim){
 
+   size_t offset = 0;
+      
+   for(int i=0; i<ndim; i++)
+         offset += indices[i] *  strides[i];
+    
+   return offset
 
-
-
-
+}
 
 
          
+int isContiguous(Tensor * T){
+  if(!T) return 0;
+  
+  size_t expected_stride = 1; // for a contigous memory strides[N-1]=1; N => ndim
+  
+  for(int i = T->ndim-1; i>=0; i--){
+       if( T->strides[i] != expected_stride ) 
+            return 0;
+       expected *= T->shapes[i];
+  }
+
+  return 1;
+
+}
+
+Tensor * reshape(Tensor * T , size_t * new_shapes , int new_ndim){
+    if(!T){
+       perror("\n NULL pointer error \n");
+       return NULL;
+    }
+    
+    if(!isContiguous(T)){
+       perror("\n to reshape the tensor must be contigous means a non transpose \n");
+       return NULL;
+    }
+
+    // now let us compute the total size if new_size > old_size 
+    size_t old_size = T->size;
+    size_t new_size = 1;
+    
+    for(int i=0; i<new_ndim; i++)
+       new_size = new_size * new_shapes[i];
+
+    if(new_size != old_size){
+        perror("Size mismatch the new shape has size more than the original shape \n");
+        return NULL;
+    }
+    
+    size_t * new_strides = (size_t *)calloc(new_ndim , sizeof(size_t)):
+    new_strides[new_ndim -1] = 1;
+    
+    for(int i = new_ndim -2; i>=0; i--)
+        new_strides[i] = new_strides[i+1] * new_shapes[i+1];    
+    
+    size_t * shapes = (size_t *)calloc(new_ndim, sizeof(size_t));
+    for(int i=0; i<new_ndim; i++)
+        shapes[i] = new_shapes[i]; // copy all the elements to the shapes array that we own
+    
+    Tensor * R = malloc(sizeof(Tensor));
+    R->data = T->data; // since this is a view it will refer the same memory
+    R->size = new_size;
+    R->shapes = shapes;
+    R->strides = new_strides;
+    R->is_view = 1;
+    R->using_mmap = T->using_mmap;
+    R->ndim = new_ndim;
+    
+    return R;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
 
 
 
