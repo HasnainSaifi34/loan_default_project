@@ -419,77 +419,9 @@ Tensor * TensorSub(Tensor * T1 , Tensor * T2){
   return res;       
 }
 
-Tensor * TensorMul(Tensor * T1 , Tensor * T2){
-
-  if(isNull(T1) || isNull(T2)) return NULL;
-  if(T1->ndim!=T2->ndim) return NULL;
-  if(T1->size!=T2->size) return NULL;
-
-  for(int i = 0; i < T1->ndim; i++){
-       if(T1->shapes[i] != T2->shapes[i]) 
-            return NULL;
-  }
-
-  Tensor * res = createEmptyTensor(T1->shapes , T1->ndim);
-  if(!res) return NULL;
-
-  if(isContiguous(T1) && isContiguous(T2)){
-      // since both tensors are stored contiguous it makes our work easy we can add element wise from the flat array
-      for(int i =0; i<T1->size; i++)
-         res->data[i] = T1->data[i] * T2->data[i];
-      return res;
-
-  }else{
-    // here we compute strides and convert the logical index into a physical index since it is non contiguous
-       size_t index[T1->ndim];  // this a buffer for storing an index set based on the flat index;
-       for(int i =0; i<T1->size; i++){
-           flat_to_multi(i , T1->shapes , T1->ndim , index);
-           size_t T1_offset = getOffset(T1->strides , index , T1->ndim);
-           size_t T2_offset = getOffset(T2->strides , index , T2->ndim);
-           res->data[i] = T1->data[T1_offset] * T2->data[T2_offset];
-           
-           
-       }  
-
-  }
-
-  return res;
-}
 
 
 
-Tensor * matMul(Tensor * A , Tensor * B){
-      if(isNull(A) || isNull(B) ) return NULL;
-      if(A->ndim != 2 || B->ndim != 2) return NULL; // only valid for 2d tensors not valid for n dim where n > 2
-     // now check the main condition for the multiplication to go through
-      if(A->shapes[1] != B->shapes[0]) return NULL; // if the colmn of A is not equal to row of B then A , B are in compatible
-      size_t Row_A = A->shapes[0];
-      size_t Col_B = B->shapes[1];
-      size_t Inner = A->shapes[1]; // or B->shapes[0];
-      double sum = 0;
-      size_t shapes[2] = {Row_A , Col_B};// the resultant matrix will always
-      Tensor * res = createEmptyTensor(shapes , 2); 
-      if(!res) return NULL;
-      
-      for(size_t r=0; r<Row_A; r++){
-           for(size_t c=0; c<Col_B; c++){
-               sum=0;
-               for(size_t k=0; k<Inner; k++){
-                   
-                   size_t A_offset = A->strides[0] * r + A->strides[1] *k; // A[r,k]
-                   size_t B_offset = B->strides[0] * k + B->strides[1]*c;  // B[k,c]
-                   
-                   sum = sum + A->data[A_offset]  * B->data[B_offset]; // A[r,k] * B[k,c] = C[r,c]
-               }
-               size_t res_offset = res->strides[0]*r + res->strides[1]*c;
-               res->data[res_offset] = sum;
-                
-           }
-      }
-
-      return res;
-}
-    
 
 
 
