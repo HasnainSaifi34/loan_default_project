@@ -71,244 +71,60 @@ void verifySub(Tensor *A, Tensor *B, Tensor *C)
 
 int main()
 {
-    // printf("===== TENSOR LIBRARY TEST =====\n\n");
+   printf("\n===== ND PRINT TEST =====\n");
 
-    // /* ------------------------------- */
-    // /* Test 1: Basic tensor creation  */
-    // /* ------------------------------- */
+/* -------- 3D Tensor -------- */
 
-    // size_t shape2d[2] = {4,5};
+size_t shape3[3] = {2,3,4};
 
-    // Tensor *A = createEmptyTensor(shape2d,2);
-    // Tensor *B = createEmptyTensor(shape2d,2);
+Tensor *T3 = createEmptyTensor(shape3,3);
 
-    // fillTensorSequential(A);
-    // fillTensorSequential(B);
+/* fill sequential values */
+for(size_t i = 0; i < T3->size; i++)
+{
+    size_t idx[3];
+    flat_to_multi(i, T3->shapes, T3->ndim, idx);
 
-    // printf("A:\n");
-    // printTensor(A);
-
-    // printf("B:\n");
-    // printTensor(B);
-
-
-    // /* ------------------------------- */
-    // /* Test 2: Contiguous Add         */
-    // /* ------------------------------- */
-
-    // Tensor *C = TensorAdd(A,B);
-
-    // printf("\nC = A + B\n");
-    // printTensor(C);
-
-    // verifyAdd(A,B,C);
-
-
-    // /* ------------------------------- */
-    // /* Test 3: Transpose view         */
-    // /* ------------------------------- */
-
-    // Tensor *At = Transpose(A);
-    // Tensor *Bt = Transpose(B);
-
-    // printf("\nAt info\n");
-    // printTensorInfo(At);
-
-    // printf("\nBt info\n");
-    // printTensorInfo(Bt);
-
-
-    // /* ------------------------------- */
-    // /* Test 4: Non-contiguous Add     */
-    // /* ------------------------------- */
-
-    // Tensor *D = TensorAdd(At,Bt);
-
-    // printf("\nD = At + Bt\n");
-    // printTensor(D);
-
-    // verifyAdd(At,Bt,D);
-
-
-    // /* ------------------------------- */
-    // /* Test 5: Subtraction            */
-    // /* ------------------------------- */
-
-    // Tensor *E = TensorSub(A,B);
-
-    // printf("\nE = A - B\n");
-    // printTensor(E);
-
-    // verifySub(A,B,E);
-
-
-    // /* ------------------------------- */
-    // /* Test 6: Reshape view           */
-    // /* ------------------------------- */
-
-    // size_t newshape[2] = {2,10};
-
-    // Tensor *R = reshape(A,newshape,2);
-
-    // printf("\nReshaped A (2x10)\n");
-    // printTensorInfo(R);
-
-
-    // /* ------------------------------- */
-    // /* Test 7: Stress add             */
-    // /* ------------------------------- */
-
-    // size_t shape3d[3] = {6,5,4};
-
-    // Tensor *T1 = createEmptyTensor(shape3d,3);
-    // Tensor *T2 = createEmptyTensor(shape3d,3);
-
-    // fillTensorSequential(T1);
-    // fillTensorSequential(T2);
-
-    // Tensor *T3 = TensorAdd(T1,T2);
-
-    // verifyAdd(T1,T2,T3);
-
-    // printf("3D add passed\n");
-
-
-    // /* ------------------------------- */
-    // /* Test 8: transpose + reshape    */
-    // /* ------------------------------- */
-
-    // Tensor *T1t = Transpose(A);
-
-    // Tensor *Tsum = TensorAdd(A,Transpose(T1t));
-
-    // verifyAdd(A,A,Tsum);
-
-    // printf("transpose + transpose add passed\n");
-
-
-    // /* ------------------------------- */
-    // /* Test 9: ref count behavior     */
-    // /* ------------------------------- */
-
-    // printf("\nReference count tests\n");
-
-    // printTensorInfo(A);
-
-    // Tensor *view1 = Transpose(A);
-    // Tensor *view2 = reshape(A,shape2d,2);
-
-    // printTensorInfo(A);
-
-    // freeTensor(view1);
-    // freeTensor(view2);
-
-    // printTensorInfo(A);
-
-
-    // /* ------------------------------- */
-    // /* Test 10: large tensor mmap     */
-    // /* ------------------------------- */
-
-    // size_t bigshape[2] = {2000,2000};
-
-    // Tensor *BIG = createEmptyTensor(bigshape,2);
-
-    // printf("\nBIG tensor created\n");
-    // printTensorInfo(BIG);
-
-
-    // /* ------------------------------- */
-    // /* Free everything                */
-    // /* ------------------------------- */
-
-    // freeTensor(A);
-    // freeTensor(B);
-    // freeTensor(C);
-    // freeTensor(D);
-    // freeTensor(E);
-    // freeTensor(R);
-
-    // freeTensor(T1);
-    // freeTensor(T2);
-    // freeTensor(T3);
-
-    // freeTensor(T1t);
-    // freeTensor(Tsum);
-
-    // freeTensor(BIG);
-
-
-    // printf("\n===== MATMUL TEST =====\n");
-
-size_t shapeA[2] = {4,1};
-size_t shapeB[2] = {1,4};
-
-Tensor *A = createEmptyTensor(shapeA,2);
-Tensor *B = createEmptyTensor(shapeB,2);
-
-/* fill A */
-for(size_t r=0; r<A->shapes[0]; r++){
-    for(size_t c=0; c<A->shapes[1]; c++){
-        size_t off = A->strides[0]*r + A->strides[1]*c;
-        A->data[off] = r*4 + c + 1;
-    }
+    size_t off = getOffset(T3->strides, idx, T3->ndim);
+    T3->data[off] = i + 1;
 }
 
-/* fill B */
-for(size_t r=0; r<B->shapes[0]; r++){
-    for(size_t c=0; c<B->shapes[1]; c++){
-        size_t off = B->strides[0]*r + B->strides[1]*c;
-        B->data[off] = r*2 + c + 1;
-    }
+printf("\n3D Tensor (2x3x4):\n");
+
+size_t indices3[3] = {0};
+printTensor(T3, indices3, 0);
+printf("\n");
+
+printTensorInfo(T3);
+
+
+/* -------- 4D Tensor -------- */
+
+size_t shape4[4] = {2,2,2,3};
+
+Tensor *T4 = createEmptyTensor(shape4,4);
+
+/* fill sequential values */
+for(size_t i = 0; i < T4->size; i++)
+{
+    size_t idx[4];
+    flat_to_multi(i, T4->shapes, T4->ndim, idx);
+
+    size_t off = getOffset(T4->strides, idx, T4->ndim);
+    T4->data[off] = i + 1;
 }
 
-printf("\nMatrix A:\n");
-printTensorInfo(A);
-printTensor(A);
-printf("\n");
-    
-printf("\nMatrix B:\n");
-printTensorInfo(B);
-printTensor(B);
-printf("\n");
-/* A @ B */
-Tensor *C = matMul(A,B);
+printf("\n4D Tensor (2x2x2x3):\n");
 
-printf("\nC = A @ B:\n");
-printTensorInfo(C);
-printTensor(C);
+size_t indices4[4] = {0};
+printTensor(T4, indices4, 0);
 printf("\n");
 
-/* transpose test */
-Tensor *At = Transpose(A);
-Tensor *Att = Transpose(At);
+printTensorInfo(T4);
 
-printf("\nTranspose(A):\n");
-printTensor(At);
 
-printf("\nTranspose(Transpose(A)):\n");
-printTensor(Att);
-
-/* should match original multiplication */
-Tensor *C2 = matMul(Att,B);
-
-printf("\nC2 = Transpose(Transpose(A)) @ B:\n");
-printTensor(C2);
-size_t newshapes[1] = { 1};
-Tensor * C3 = reshape(matMul(Transpose(A),Transpose(B)) , newshapes , 1 );
-
-printf("\n C3 = A^T @ B^T  \n");
-printTensorInfo(C3);
-printTensor(C3);
-
-/* free memory */
-freeTensor(A);
-freeTensor(B);
-freeTensor(C);
-freeTensor(At);
-freeTensor(Att);
-freeTensor(C2);
-freeTensor(C3);
-printf("\nALL TESTS PASSED\n");
+/* free tensors */
+freeTensor(T3);
+freeTensor(T4);
     return 0;
 }

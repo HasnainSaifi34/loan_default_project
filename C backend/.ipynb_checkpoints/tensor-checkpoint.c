@@ -206,44 +206,7 @@ int isNull(Tensor * T){
 
 
 
-void printTensor(Tensor *T) {
 
-    if (!T) {
-        printf("Tensor is NULL\n");
-        return;
-    }
-
-    if (T->ndim == 1) {
-
-        printf("[ ");
-        for (size_t i = 0; i < T->shapes[0]; i++) {
-            size_t offset = i * T->strides[0];
-            printf("%.2f ", T->data[offset]);
-        }
-        printf("]\n");
-
-    } else if (T->ndim == 2) {
-
-        for (size_t r = 0; r < T->shapes[0]; r++) {
-
-            for (size_t c = 0; c < T->shapes[1]; c++) {
-
-                size_t offset =
-                    r * T->strides[0] +
-                    c * T->strides[1];
-
-                printf("%lf ", T->data[offset]);
-            }
-
-            printf("\n");
-        }
-
-    } else {
-
-        printf("printTensor supports only 1D or 2D tensors\n");
-    }
-    fflush(stdout);
-}
 
 size_t getOffset(size_t * strides , size_t * indices , int ndim){
 
@@ -256,7 +219,51 @@ size_t getOffset(size_t * strides , size_t * indices , int ndim){
 
 }
 
+void printTensorRec(Tensor *T, size_t *indices, int dim)
+{
+    if (dim == T->ndim - 1) {
 
+        printf("[ ");
+
+        for (size_t i = 0; i < T->shapes[dim]; i++) {
+            indices[dim] = i;
+
+            size_t offset = getOffset(T->strides, indices, T->ndim);
+            printf("%.2f ", T->data[offset]);
+        }
+
+        printf("]");
+
+    } else {
+
+        printf("[\n");
+
+        for (size_t i = 0; i < T->shapes[dim]; i++) {
+
+            indices[dim] = i;
+            printTensorRec(T, indices, dim + 1);
+
+            printf("\n");
+        }
+
+        printf("]");
+    }
+    fflush(stdout);
+}
+
+void printTensor(Tensor *T)
+{
+    if(!T) return;
+
+    size_t *indices = calloc(T->ndim, sizeof(size_t));
+    if(!indices) return;
+
+    printTensorRec(T, indices, 0);
+
+    printf("\n");
+
+    free(indices);
+}
          
 int isContiguous(Tensor * T){
   if(!T) return 0;
@@ -274,6 +281,8 @@ int isContiguous(Tensor * T){
 }
 
 Tensor * reshape(Tensor * T , size_t * new_shapes , int new_ndim){
+    // NOTE : This does not work with not contiguous tensors such as a transpose view for that use reshape_safe that copies the data in a contiguous format
+    // and returns the transpose of that 
     if(!T){
        return NULL;
     }
@@ -466,14 +475,13 @@ Tensor * matMul(Tensor * A , Tensor * B){
       size_t Row_A = A->shapes[0];
       size_t Col_B = B->shapes[1];
       size_t Inner = A->shapes[1]; // or B->shapes[0];
-      double sum = 0;
       size_t shapes[2] = {Row_A , Col_B};// the resultant matrix will always
       Tensor * res = createEmptyTensor(shapes , 2); 
       if(!res) return NULL;
       
       for(size_t r=0; r<Row_A; r++){
            for(size_t c=0; c<Col_B; c++){
-               sum=0;
+               double sum=0;
                for(size_t k=0; k<Inner; k++){
                    
                    size_t A_offset = A->strides[0] * r + A->strides[1] *k; // A[r,k]
@@ -491,7 +499,27 @@ Tensor * matMul(Tensor * A , Tensor * B){
 }
     
 
+Tensor * materialize(Tensor *T) {
+    // Creates a brand new contiguous copy of T it just converts a non contiguous tensor into a contiguous one or can be used to create copies
+    Tensor *C = createEmptyTensor(T->shapes, T->ndim);
+    for (size_t i = 0; i < T->size; i++) {
+        size_t indices[T->ndim];
+        flat_to_multi(i, T->shapes, T->ndim, indices);
+        size_t src_offset = getOffset(T->strides, indices, T->ndim);
+        C->data[i] = T->data[src_offset];
+    }
+    return C;
+}
 
+Tensor * reshape_safe(Tensor *T, size_t *new_shapes, int new_ndim) {
+    if (!isContiguous(T)) {
+        Tensor *C = materialize(T);
+        Tensor *R = reshape(C, new_shapes, new_ndim);
+        freeTensor(C);
+        return R;
+    }
+    return reshape(T, new_shapes, new_ndim);
+}
 
 
 
