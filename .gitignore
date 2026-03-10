@@ -1,0 +1,74 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Virtual Environments
+# =========================
+venv/
+.env/
+.envrc
+.venv/
+ENV/
+
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints
+
+# Optional: remove notebook outputs before committing
+*.nbconvert.ipynb
+
+# =========================
+# Data Science / ML
+# =========================
+data/
+datasets/
+*.csv
+*.tsv
+*.sqlite
+*.db
+
+# Models
+models/
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+*.pt
+*.pth
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Temporary Files
+# =========================
+*.tmp
+*.temp
+*.swp

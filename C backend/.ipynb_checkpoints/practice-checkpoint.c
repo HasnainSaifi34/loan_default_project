@@ -69,62 +69,51 @@ void verifySub(Tensor *A, Tensor *B, Tensor *C)
     printf("Sub verification passed\n");
 }
 
-int main()
-{
-   printf("\n===== ND PRINT TEST =====\n");
+int main(){
 
-/* -------- 3D Tensor -------- */
+    size_t shape[2] = {3,3};
 
-size_t shape3[3] = {2,3,4};
+    Tensor *A = createEmptyTensor(shape,2);
+    if(!A){
+        printf("Tensor creation failed\n");
+        return 1;
+    }
 
-Tensor *T3 = createEmptyTensor(shape3,3);
+    // Fill tensor with values 1..9
+    for(size_t i = 0; i < A->size; i++){
+        A->data[A->storage_offset + i] = i + 1;
+    }
 
-/* fill sequential values */
-for(size_t i = 0; i < T3->size; i++)
-{
-    size_t idx[3];
-    flat_to_multi(i, T3->shapes, T3->ndim, idx);
+    printf("\nOriginal Tensor A\n");
+    printTensorInfo(A);
+    printTensor(A);
 
-    size_t off = getOffset(T3->strides, idx, T3->ndim);
-    T3->data[off] = i + 1;
-}
+    // Slice rows: A[1:]
+    Tensor *B = slice_dim(A,0,1,3);
 
-printf("\n3D Tensor (2x3x4):\n");
+    printf("\nSlice B = A[1:]\n");
+    printTensorInfo(B);
+    printTensor(B);
 
-size_t indices3[3] = {0};
-printTensor(T3, indices3, 0);
-printf("\n");
+    // Slice columns: A[:,1:]
+    Tensor *C = slice_dim(A,1,1,3);
 
-printTensorInfo(T3);
+    printf("\nSlice C = A[:,1:]\n");
+    printTensorInfo(C);
+    printTensor(C);
 
+    // Slice on a slice
+    Tensor *D = slice_dim(B,1,1,3);
 
-/* -------- 4D Tensor -------- */
+    printf("\nSlice D = B[:,1:]\n");
+    printTensorInfo(D);
+    printTensor(D);
 
-size_t shape4[4] = {2,2,2,3};
+    // Clean up
+    freeTensor(D);
+    freeTensor(C);
+    freeTensor(B);
+    freeTensor(A);
 
-Tensor *T4 = createEmptyTensor(shape4,4);
-
-/* fill sequential values */
-for(size_t i = 0; i < T4->size; i++)
-{
-    size_t idx[4];
-    flat_to_multi(i, T4->shapes, T4->ndim, idx);
-
-    size_t off = getOffset(T4->strides, idx, T4->ndim);
-    T4->data[off] = i + 1;
-}
-
-printf("\n4D Tensor (2x2x2x3):\n");
-
-size_t indices4[4] = {0};
-printTensor(T4, indices4, 0);
-printf("\n");
-
-printTensorInfo(T4);
-
-
-/* free tensors */
-freeTensor(T3);
-freeTensor(T4);
     return 0;
 }

@@ -106,3 +106,5 @@ class Tensor:
         if hasattr(self, "_ptr") and self._ptr:
             _lib.freeTensor(self._ptr)
             self._ptr = None
+            
+   

@@ -9,6 +9,7 @@ typedef struct Tensor{
  size_t * strides;
  double * data;
  size_t size;
+ size_t storage_offset; // for a non view tensor it is just 0 and it is useful in slicing
  int using_mmap;
  int* ref_count;
 }Tensor;
@@ -99,6 +100,7 @@ Tensor *  createEmptyTensor(size_t * shape , int N){
    T->size = size;
    T->ndim = N;
    T->ref_count = ref_count;
+   T->storage_offset = 0;
    return T;
 
 }
@@ -189,6 +191,7 @@ Tensor * Transpose(Tensor * A){
     At->using_mmap = A->using_mmap;
     At->data = A->data;
     At->ref_count = A->ref_count;
+    At->storage_offset = A->storage_offset;
     (*At->ref_count)++;
     return At;
 
@@ -229,7 +232,7 @@ void printTensorRec(Tensor *T, size_t *indices, int dim)
             indices[dim] = i;
 
             size_t offset = getOffset(T->strides, indices, T->ndim);
-            printf("%.2f ", T->data[offset]);
+            printf("%.2f ", T->data[offset + T->storage_offset]);
         }
 
         printf("]");
@@ -337,6 +340,7 @@ Tensor * reshape(Tensor * T , size_t * new_shapes , int new_ndim){
     R->ref_count = T->ref_count;
     R->using_mmap = T->using_mmap;
     R->ndim = new_ndim;
+    R->storage_offset = T->storage_offset;
     
     return R;
 
@@ -370,7 +374,7 @@ Tensor * TensorAdd(Tensor * T1 , Tensor * T2){
   if(isContiguous(T1) && isContiguous(T2)){
       // since both tensors are stored contiguous it makes our work easy we can add element wise from the flat array
       for(int i =0; i<T1->size; i++)
-         res->data[i] = T1->data[i] + T2->data[i];
+         res->data[i] = T1->data[i + T1->storage_offset] + T2->data[i + T2->storage_offset];
       return res;
 
   }else{
@@ -380,7 +384,7 @@ Tensor * TensorAdd(Tensor * T1 , Tensor * T2){
            flat_to_multi(i , T1->shapes , T1->ndim , index);
            size_t T1_offset = getOffset(T1->strides , index , T1->ndim);
            size_t T2_offset = getOffset(T2->strides , index , T2->ndim);
-           res->data[i] = T1->data[T1_offset] + T2->data[T2_offset];
+           res->data[i] = T1->data[T1_offset + T1->storage_offset] + T2->data[T2_offset + T2->storage_offset];
            
            
        }  
@@ -408,7 +412,7 @@ Tensor * TensorSub(Tensor * T1 , Tensor * T2){
   if(isContiguous(T1) && isContiguous(T2)){
       // since both tensors are stored contiguous it makes our work easy we can add element wise from the flat array
       for(int i =0; i<T1->size; i++)
-         res->data[i] = T1->data[i] - T2->data[i];
+         res->data[i] = T1->data[i + T1->storage_offset] - T2->data[i + T2->storage_offset];
       return res;
 
   }else{
@@ -418,7 +422,7 @@ Tensor * TensorSub(Tensor * T1 , Tensor * T2){
            flat_to_multi(i , T1->shapes , T1->ndim , index);
            size_t T1_offset = getOffset(T1->strides , index , T1->ndim);
            size_t T2_offset = getOffset(T2->strides , index , T2->ndim);
-           res->data[i] = T1->data[T1_offset] - T2->data[T2_offset];
+           res->data[i] = T1->data[T1_offset + T1->storage_offset] - T2->data[T2_offset + T2->storage_offset];
            
            
        }  
@@ -445,7 +449,7 @@ Tensor * TensorMul(Tensor * T1 , Tensor * T2){
   if(isContiguous(T1) && isContiguous(T2)){
       // since both tensors are stored contiguous it makes our work easy we can add element wise from the flat array
       for(int i =0; i<T1->size; i++)
-         res->data[i] = T1->data[i] * T2->data[i];
+         res->data[i] = T1->data[i + T1->storage_offset] * T2->data[i + T2->storage_offset];
       return res;
 
   }else{
@@ -455,7 +459,7 @@ Tensor * TensorMul(Tensor * T1 , Tensor * T2){
            flat_to_multi(i , T1->shapes , T1->ndim , index);
            size_t T1_offset = getOffset(T1->strides , index , T1->ndim);
            size_t T2_offset = getOffset(T2->strides , index , T2->ndim);
-           res->data[i] = T1->data[T1_offset] * T2->data[T2_offset];
+           res->data[i] = T1->data[T1_offset + T1->storage_offset] * T2->data[T2_offset + T2->storage_offset];
            
            
        }  
@@ -487,10 +491,10 @@ Tensor * matMul(Tensor * A , Tensor * B){
                    size_t A_offset = A->strides[0] * r + A->strides[1] *k; // A[r,k]
                    size_t B_offset = B->strides[0] * k + B->strides[1]*c;  // B[k,c]
                    
-                   sum = sum + A->data[A_offset]  * B->data[B_offset]; // A[r,k] * B[k,c] = C[r,c]
+                   sum = sum + A->data[A_offset + A->storage_offset]  * B->data[B_offset + B->storage_offset]; // A[r,k] * B[k,c] = C[r,c]
                }
                size_t res_offset = res->strides[0]*r + res->strides[1]*c;
-               res->data[res_offset] = sum;
+               res->data[res_offset + res->storage_offset] = sum;
                 
            }
       }
@@ -506,7 +510,7 @@ Tensor * materialize(Tensor *T) {
         size_t indices[T->ndim];
         flat_to_multi(i, T->shapes, T->ndim, indices);
         size_t src_offset = getOffset(T->strides, indices, T->ndim);
-        C->data[i] = T->data[src_offset];
+        C->data[i] = T->data[src_offset + T->storage_offset];
     }
     return C;
 }
@@ -522,7 +526,46 @@ Tensor * reshape_safe(Tensor *T, size_t *new_shapes, int new_ndim) {
 }
 
 
+Tensor * slice_dim(Tensor *T, int dim, size_t start, size_t end){
+    
+    if(dim < 0 || dim >= T->ndim) return NULL;
+    if(start >= end) return NULL; 
+    if(end > T->shapes[dim]) return NULL;
+    // dim means which dim are we slicing dim =0 rows , dim =1 colmns dim = 2 blocks
+    Tensor *S = malloc(sizeof(Tensor));
+    if(!S) return NULL;
+    
+    S->ndim = T->ndim;
+    S->data = T->data;
+    S->using_mmap = T->using_mmap;
+    S->ref_count = T->ref_count;
 
+    (*S->ref_count)++;
+
+    S->shapes = calloc(S->ndim , sizeof(size_t));
+    if(!S->shapes){
+        free(S);
+        return NULL;
+    }
+    S->strides = calloc(S->ndim , sizeof(size_t));
+    if(!S->strides){
+        free(S->shapes);
+        free(S);
+        return NULL;
+    }
+    for(int i=0; i<T->ndim; i++){
+        S->shapes[i] = T->shapes[i];
+        S->strides[i] = T->strides[i];
+    }
+
+    S->shapes[dim] = end - start;
+
+    S->storage_offset =
+        T->storage_offset + start * T->strides[dim];
+    S->size = T->size / T->shapes[dim] * (end - start);
+    
+    return S;
+}
 
     
 
